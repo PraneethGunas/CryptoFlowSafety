@@ -1,0 +1,65 @@
+{
+  "name": "crypto-api-misuse-dataset",
+  "version": "1.0.0",
+  "description": "Interprocedural Cryptographic API Misuse Dataset for security research and education",
+  "main": "src/index.js",
+  "scripts": {
+    "demo:secure": "node run-demo-script.js secure",
+    "demo:insecure": "node run-demo-script.js insecure",
+    "demo:function": "node scripts/run-function.js",
+    "list": "node scripts/list-examples.js",
+    "explain": "node scripts/explain-example.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src/**/*.js",
+    "lint:security": "eslint src/**/*.js --config .eslintrc-security.js"
+  },
+  "keywords": [
+    "cryptography",
+    "security",
+    "api-misuse",
+    "dataset",
+    "bitcoin",
+    "ethereum",
+    "wallet",
+    "research",
+    "interprocedural",
+    "static-analysis"
+  ],
+  "author": "Praneeth Gunas",
+  "license": "MIT",
+  "dependencies": {
+    "bip32": "^2.0.6",
+    "bip39": "^3.0.4",
+    "bitcoinjs-lib": "^5.2.0",
+    "chalk": "^4.1.2",
+    "crypto": "^1.0.1",
+    "crypto-js": "^4.1.1",
+    "elliptic": "^6.5.4",
+    "ethers": "^5.7.2",
+    "scrypt-js": "^3.0.1",
+    "secp256k1": "^4.0.3",
+    "tiny-secp256k1": "^1.1.6",
+    "commander": "^9.4.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.33.0",
+    "eslint-plugin-security": "^1.7.1",
+    "eslint-plugin-node": "^11.1.0",
+    "jest": "^29.4.1",
+    "madge": "^5.0.1",
+    "acorn": "^8.8.2",
+    "acorn-walk": "^8.2.0",
+    "graphviz": "^0.0.9"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PraneethGunas/crypto-api-misuse-dataset.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PraneethGunas/crypto-api-misuse-dataset/issues"
+  },
+  "homepage": "https://github.com/PraneethGunas/crypto-api-misuse-dataset#readme"
+}

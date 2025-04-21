@@ -29,7 +29,7 @@ if (securityType !== 'secure' && securityType !== 'insecure') {
 }
 
 const fileName = `${securityType}-${exampleName}.js`;
-const filePath = path.join(__dirname, '..', 'src', fileName);
+const filePath = path.join(__dirname, 'src', fileName);
 
 // Check if file exists
 if (!fs.existsSync(filePath)) {
@@ -37,7 +37,7 @@ if (!fs.existsSync(filePath)) {
   console.log(chalk.yellow('Available examples:'));
   
   // List available examples
-  const srcDir = path.join(__dirname, '..', 'src');
+  const srcDir = path.join(__dirname, 'src');
   const files = fs.readdirSync(srcDir)
     .filter(file => file.startsWith(securityType) && file.endsWith('.js'));
   
