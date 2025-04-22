@@ -10,26 +10,39 @@
 // Note: This is a browser-specific implementation that uses
 // browser APIs. These would not work in a standard Node.js environment.
 
+import { ExtendedWindow, CommunicationChannel, SecureMessage, SecureMessageEnvelope } from './types/browser';
+
+// Declare global window type
+declare const window: ExtendedWindow;
+declare const crypto: Crypto;
+
+interface CommunicationResult {
+  sendMessage: (message: any) => void;
+}
+
 // Function 1: Generate a secure communication key
-function generateSecureCommunicationKey() {
+export function generateSecureCommunicationKey(): Uint8Array {
   // Generate a secure random key
   return crypto.getRandomValues(new Uint8Array(32));
 }
 
 // Function 2: Setup secure communication channel
-function setupSecureCommunication(iframe, targetOrigin) {
+export function setupSecureCommunication(
+  iframe: HTMLIFrameElement, 
+  targetOrigin: string
+): CommunicationChannel {
   // Generate a secure key for communication
   const key = generateSecureCommunicationKey();
   
   // Store the key and target origin
-  const channel = {
+  const channel: CommunicationChannel = {
     key,
     targetOrigin,
     iframe
   };
   
   // Setup message listener
-  window.addEventListener('message', event => {
+  window.addEventListener('message', (event: MessageEvent) => {
     // Validate origin
     if (event.origin !== targetOrigin) {
       console.error(`Invalid origin: ${event.origin}`);
@@ -50,7 +63,7 @@ function setupSecureCommunication(iframe, targetOrigin) {
 }
 
 // Function 3: Send secure message to iframe
-function sendSecureMessage(message, channel) {
+export function sendSecureMessage(message: any, channel: CommunicationChannel): void {
   // Create a nonce
   const nonce = crypto.getRandomValues(new Uint8Array(16));
   
@@ -63,14 +76,14 @@ function sendSecureMessage(message, channel) {
   const hmac = createHmac(channel.key, msgBytes);
   
   // Send the message with HMAC
-  channel.iframe.contentWindow.postMessage({
+  channel.iframe.contentWindow?.postMessage({
     data: msgData,
     hmac: Array.from(hmac)
   }, channel.targetOrigin);
 }
 
 // Function 4: Process secure message from iframe
-function processSecureMessage(data, channel) {
+export function processSecureMessage(data: SecureMessageEnvelope, channel: CommunicationChannel): void {
   // Validate message format
   if (!data || !data.data || !data.hmac) {
     console.error('Invalid message format');
@@ -90,7 +103,7 @@ function processSecureMessage(data, channel) {
   
   // Parse the message
   try {
-    const parsedData = JSON.parse(data.data);
+    const parsedData = JSON.parse(data.data) as SecureMessage;
     
     // Process the message
     console.log('Received secure message:', parsedData.message);
@@ -102,7 +115,7 @@ function processSecureMessage(data, channel) {
 }
 
 // Helper function to create HMAC
-function createHmac(key, data) {
+export async function createHmac(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
   // In a browser environment, we would use SubtleCrypto
   // This is a simplified version for demonstration
   
@@ -113,13 +126,13 @@ function createHmac(key, data) {
   
   // Create a hash of the combined data
   // (In a real implementation, this would use a proper HMAC function)
-  const hashBuffer = crypto.subtle.digest('SHA-256', combinedData);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', combinedData);
   
   return new Uint8Array(hashBuffer);
 }
 
 // Helper function for constant-time comparison
-function constantTimeEqual(a, b) {
+export function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) {
     return false;
   }
@@ -134,7 +147,7 @@ function constantTimeEqual(a, b) {
 }
 
 // Main function to initialize secure cross-origin communication
-function secureIframeCommunication(iframeUrl) {
+export function secureIframeCommunication(iframeUrl: string): CommunicationResult {
   // Create an iframe
   const iframe = document.createElement('iframe');
   iframe.src = iframeUrl;
@@ -148,16 +161,6 @@ function secureIframeCommunication(iframeUrl) {
   
   // Return the channel for sending messages
   return {
-    sendMessage: (message) => sendSecureMessage(message, channel)
+    sendMessage: (message: any) => sendSecureMessage(message, channel)
   };
 }
-
-module.exports = {
-  generateSecureCommunicationKey,
-  setupSecureCommunication,
-  sendSecureMessage,
-  processSecureMessage,
-  createHmac,
-  constantTimeEqual,
-  secureIframeCommunication
-};

@@ -7,11 +7,12 @@
  * - Handles memory securely
  */
 
-const crypto = require('crypto');
-const scrypt = require('scrypt-js');
+import * as crypto from 'crypto';
+import * as scrypt from 'scrypt-js';
+import { KeyStore, EthereumKeyResult } from './types/common';
 
 // Function 1: Generate a secure Ethereum key
-function generateSecureEthereumKey() {
+export function generateSecureEthereumKey(): string {
   // Generate a secure random private key
   const privateKey = crypto.randomBytes(32);
   
@@ -20,11 +21,11 @@ function generateSecureEthereumKey() {
 }
 
 // Function 2: Encrypt a private key with a password
-async function encryptPrivateKey(privateKey, password) {
+export async function encryptPrivateKey(privateKey: string | Buffer, password: string): Promise<KeyStore> {
   // Ensure privateKey is a Buffer
-  if (typeof privateKey === 'string') {
-    privateKey = Buffer.from(privateKey, 'hex');
-  }
+  const privateKeyBuffer = typeof privateKey === 'string' 
+    ? Buffer.from(privateKey, 'hex') 
+    : privateKey;
   
   // Generate a random salt
   const salt = crypto.randomBytes(32);
@@ -45,12 +46,12 @@ async function encryptPrivateKey(privateKey, password) {
   // Encrypt the private key
   const cipher = crypto.createCipheriv('aes-256-ctr', Buffer.from(encryptionKey), iv);
   const ciphertext = Buffer.concat([
-    cipher.update(privateKey),
+    cipher.update(privateKeyBuffer),
     cipher.final()
   ]);
   
   // Create the keystore object
-  const keystore = {
+  const keystore: KeyStore = {
     version: 3,
     id: crypto.randomUUID(),
     address: 'placeholder', // In a real implementation, this would be derived from the private key
@@ -78,7 +79,7 @@ async function encryptPrivateKey(privateKey, password) {
 }
 
 // Function 3: Decrypt a private key from a keystore
-async function decryptPrivateKey(keystore, password) {
+export async function decryptPrivateKey(keystore: KeyStore, password: string): Promise<string> {
   // Validate keystore format
   if (keystore.version !== 3) {
     throw new Error('Unsupported keystore version');
@@ -95,9 +96,9 @@ async function decryptPrivateKey(keystore, password) {
   const encryptionKey = await scrypt.scrypt(
     Buffer.from(password, 'utf8'),
     Buffer.from(kdfparams.salt, 'hex'),
-    kdfparams.n,
-    kdfparams.r,
-    kdfparams.p,
+    kdfparams.n || 32768,
+    kdfparams.r || 8,
+    kdfparams.p || 1,
     kdfparams.dklen
   );
   
@@ -129,7 +130,10 @@ async function decryptPrivateKey(keystore, password) {
 }
 
 // Function 4: Use private key securely
-function usePrivateKeySecurely(privateKey, action) {
+export function usePrivateKeySecurely<T>(
+  privateKey: string | Buffer, 
+  action: (key: string | Buffer) => T
+): T {
   try {
     // Perform the action with the private key
     const result = action(privateKey);
@@ -157,7 +161,7 @@ function usePrivateKeySecurely(privateKey, action) {
 }
 
 // Main function for secure Ethereum key management
-async function secureEthereumKeyManagement(password) {
+export async function secureEthereumKeyManagement(password: string): Promise<EthereumKeyResult> {
   // Generate a new private key
   const privateKey = generateSecureEthereumKey();
   
@@ -167,7 +171,9 @@ async function secureEthereumKeyManagement(password) {
   // Example of using the private key securely
   const result = usePrivateKeySecurely(privateKey, (key) => {
     // Mock action that uses the private key
-    return `Action performed with key ending in ...${key.slice(-4)}`;
+    return `Action performed with key ending in ...${typeof key === 'string' 
+      ? key.slice(-4) 
+      : key.toString('hex').slice(-4)}`;
   });
   
   return {
@@ -175,11 +181,3 @@ async function secureEthereumKeyManagement(password) {
     result
   };
 }
-
-module.exports = {
-  generateSecureEthereumKey,
-  encryptPrivateKey,
-  decryptPrivateKey,
-  usePrivateKeySecurely,
-  secureEthereumKeyManagement
-};

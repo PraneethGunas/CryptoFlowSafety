@@ -7,23 +7,52 @@
  * - Interprocedural weakness where nonce generation affects signing security
  */
 
-const bitcoin = require('bitcoinjs-lib');
-const bip32 = require('bip32');
-const crypto = require('crypto');
-const ecc = require('tiny-secp256k1');
+import * as bitcoin from 'bitcoinjs-lib';
+import * as bip32 from 'bip32';
+import * as crypto from 'crypto';
+import * as ecc from 'tiny-secp256k1';
+import { Transaction } from './types/common';
+
+interface BitcoinTxBuilder {
+  inputs: any[];
+  getHashForSignature(index: number, prevOutScript: Buffer, hashType: number): Buffer;
+  addInput(txid: string, vout: number): void;
+  addOutput(address: string, value: number): void;
+  build(): any;
+  clone(): BitcoinTxBuilder;
+}
+
+interface Recipient {
+  address: string;
+  value: number;
+}
+
+interface UTXO {
+  txid: string;
+  vout: number;
+  value: number;
+}
 
 // Function 1: Derive private key from HD wallet
-function derivePrivateKeyInsecure(seed, derivationPath) {
+export function derivePrivateKeyInsecure(seed: string, derivationPath: string): Buffer {
   // This part is implemented correctly
   const root = bip32.fromSeed(Buffer.from(seed, 'hex'));
   const child = root.derivePath(derivationPath);
+  if (!child.privateKey) {
+    throw new Error("Failed to derive private key");
+  }
   return child.privateKey;
 }
 
 // Function 2: Create transaction
-function createTransactionInsecure(utxos, recipients, fee, changeAddress) {
+export function createTransactionInsecure(
+  utxos: UTXO[], 
+  recipients: Recipient[], 
+  fee: number, 
+  changeAddress: string
+): BitcoinTxBuilder {
   // This part is implemented correctly
-  const txb = new bitcoin.TransactionBuilder();
+  const txb = new bitcoin.TransactionBuilder() as BitcoinTxBuilder;
   
   let inputTotal = 0;
   utxos.forEach(utxo => {
@@ -46,14 +75,14 @@ function createTransactionInsecure(utxos, recipients, fee, changeAddress) {
 }
 
 // Function 3: Generate nonce (k-value) for ECDSA signature - INSECURE
-function generateInsecureNonce() {
+export function generateInsecureNonce(): Buffer {
   // VULNERABILITY: Using random instead of deterministic nonce generation
   // This can lead to nonce reuse or weak nonces, exposing the private key
   return crypto.randomBytes(32);
 }
 
 // Function 4: Sign transaction with private key and custom nonce
-function signTransactionInsecure(transaction, privateKey) {
+export function signTransactionInsecure(transaction: BitcoinTxBuilder, privateKey: Buffer): any {
   // Clone the transaction
   const txb = transaction.clone();
   
@@ -71,6 +100,8 @@ function signTransactionInsecure(transaction, privateKey) {
     const signature = Buffer.concat([sigObj.signature, Buffer.from([bitcoin.Transaction.SIGHASH_ALL])]);
     
     // Apply the signature
+    // Note: This is a simplified version for demonstration
+    // In a real implementation, we would need to handle script types correctly
     txb.inputs[i].scriptSig = bitcoin.script.compile([signature, privateKey]);
   }
   
@@ -78,16 +109,15 @@ function signTransactionInsecure(transaction, privateKey) {
 }
 
 // Main function to create and sign a transaction
-function createAndSignTransactionInsecure(seed, derivationPath, utxos, recipients, fee, changeAddress) {
+export function createAndSignTransactionInsecure(
+  seed: string, 
+  derivationPath: string, 
+  utxos: UTXO[], 
+  recipients: Recipient[], 
+  fee: number, 
+  changeAddress: string
+): any {
   const privateKey = derivePrivateKeyInsecure(seed, derivationPath);
   const txb = createTransactionInsecure(utxos, recipients, fee, changeAddress);
   return signTransactionInsecure(txb, privateKey);
 }
-
-module.exports = {
-  derivePrivateKeyInsecure,
-  createTransactionInsecure,
-  generateInsecureNonce,
-  signTransactionInsecure,
-  createAndSignTransactionInsecure
-};

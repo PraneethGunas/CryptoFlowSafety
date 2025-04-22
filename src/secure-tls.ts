@@ -7,12 +7,39 @@
  * - Secure protocols
  */
 
-const https = require('https');
-const tls = require('tls');
-const crypto = require('crypto');
+import * as https from 'https';
+import * as tls from 'tls';
+import * as crypto from 'crypto';
+import { URL } from 'url';
+import { HttpResponse } from './types/common';
+
+interface HttpsOptions {
+  minVersion?: string;
+  ciphers?: string;
+  honorCipherOrder?: boolean;
+  requestOCSP?: boolean;
+  rejectUnauthorized?: boolean;
+  hostname?: string;
+  port?: number;
+  path?: string;
+  method?: string;
+  body?: string;
+  headers?: Record<string, string>;
+  checkServerIdentity?: (hostname: string, cert: tls.PeerCertificate) => Error | undefined;
+}
+
+interface CertificateValidationResult {
+  valid: boolean;
+  reason?: string;
+}
+
+interface PinningConfig {
+  hostname: string;
+  publicKeyHash: string;
+}
 
 // Function 1: Create secure HTTPS options
-function createSecureHttpsOptions() {
+export function createSecureHttpsOptions(): HttpsOptions {
   return {
     // Minimum TLS version
     minVersion: 'TLSv1.2',
@@ -32,17 +59,17 @@ function createSecureHttpsOptions() {
 }
 
 // Function 2: Make secure HTTPS request
-function makeSecureHttpsRequest(url, options = {}) {
+export function makeSecureHttpsRequest(url: string, options: HttpsOptions = {}): Promise<HttpResponse> {
   return new Promise((resolve, reject) => {
     // Parse the URL
     const parsedUrl = new URL(url);
     
     // Merge options with secure defaults
-    const requestOptions = {
+    const requestOptions: HttpsOptions = {
       ...createSecureHttpsOptions(),
       ...options,
       hostname: parsedUrl.hostname,
-      port: parsedUrl.port || 443,
+      port: parsedUrl.port ? parseInt(parsedUrl.port) : 443,
       path: parsedUrl.pathname + parsedUrl.search,
       method: options.method || 'GET'
     };
@@ -50,7 +77,7 @@ function makeSecureHttpsRequest(url, options = {}) {
     // Create the request
     const req = https.request(requestOptions, (res) => {
       // Check for secure redirects
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         // Ensure redirects only go to HTTPS URLs
         const redirectUrl = new URL(res.headers.location, url);
         if (redirectUrl.protocol !== 'https:') {
@@ -67,8 +94,8 @@ function makeSecureHttpsRequest(url, options = {}) {
       
       res.on('end', () => {
         resolve({
-          statusCode: res.statusCode,
-          headers: res.headers,
+          statusCode: res.statusCode ?? 0,
+          headers: res.headers as Record<string, string>,
           data
         });
       });
@@ -89,7 +116,7 @@ function makeSecureHttpsRequest(url, options = {}) {
 }
 
 // Function 3: Validate certificate
-function validateCertificate(cert, hostname) {
+export function validateCertificate(cert: tls.PeerCertificate, hostname: string): CertificateValidationResult {
   // Check certificate validity period
   const now = Date.now();
   const certNotBefore = new Date(cert.valid_from).getTime();
@@ -141,9 +168,9 @@ function validateCertificate(cert, hostname) {
 }
 
 // Function 4: Pin certificates
-function configureCertificatePinning(hostname, publicKeyHash) {
+export function configureCertificatePinning(hostname: string, publicKeyHash: string): (cert: tls.PeerCertificate) => boolean {
   // Return a checking function for the specified hostname and public key hash
-  return (cert) => {
+  return (cert: tls.PeerCertificate) => {
     // Get the public key from the certificate
     const publicKey = cert.pubkey;
     
@@ -156,18 +183,18 @@ function configureCertificatePinning(hostname, publicKeyHash) {
 }
 
 // Main function for secure TLS communication
-async function secureTlsCommunication(url, pinningConfig = null) {
+export async function secureTlsCommunication(url: string, pinningConfig: PinningConfig | null = null): Promise<HttpResponse> {
   try {
     // Create options with secure defaults
-    const options = createSecureHttpsOptions();
+    const options: HttpsOptions = createSecureHttpsOptions();
     
     // Add certificate pinning if provided
     if (pinningConfig) {
-      options.checkServerIdentity = (hostname, cert) => {
+      options.checkServerIdentity = (hostname: string, cert: tls.PeerCertificate) => {
         // First validate the certificate
         const validation = validateCertificate(cert, hostname);
         if (!validation.valid) {
-          return new Error(validation.reason);
+          return new Error(validation.reason || 'Certificate validation failed');
         }
         
         // Then check certificate pinning
@@ -185,15 +212,7 @@ async function secureTlsCommunication(url, pinningConfig = null) {
     
     return response;
   } catch (error) {
-    console.error(`Secure TLS communication error: ${error.message}`);
+    console.error(`Secure TLS communication error: ${(error as Error).message}`);
     throw error;
   }
 }
-
-module.exports = {
-  createSecureHttpsOptions,
-  makeSecureHttpsRequest,
-  validateCertificate,
-  configureCertificatePinning,
-  secureTlsCommunication
-};

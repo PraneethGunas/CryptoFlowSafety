@@ -7,12 +7,33 @@
  * - Maintains security across function boundaries
  */
 
-const bitcoin = require('bitcoinjs-lib');
-const bip32 = require('bip32');
-const crypto = require('crypto');
+import * as bitcoin from 'bitcoinjs-lib';
+import * as bip32 from 'bip32';
+import * as crypto from 'crypto';
+import { Transaction, TransactionInput, TransactionOutput } from './types/common';
+
+interface BitcoinTxBuilder {
+  inputs: any[];
+  addInput(txid: string, vout: number): void;
+  addOutput(address: string, value: number): void;
+  sign(index: number, keyPair: any, redeemScript?: Buffer | null, hashType?: number): void;
+  build(): any;
+  clone(): BitcoinTxBuilder;
+}
+
+interface Recipient {
+  address: string;
+  value: number;
+}
+
+interface UTXO {
+  txid: string;
+  vout: number;
+  value: number;
+}
 
 // Function 1: Derive private key from HD wallet
-function derivePrivateKey(seed, derivationPath) {
+export function derivePrivateKey(seed: string, derivationPath: string): Buffer {
   // Create master node from seed
   const root = bip32.fromSeed(Buffer.from(seed, 'hex'));
   
@@ -20,13 +41,21 @@ function derivePrivateKey(seed, derivationPath) {
   const child = root.derivePath(derivationPath);
   
   // Return private key
+  if (!child.privateKey) {
+    throw new Error("Failed to derive private key");
+  }
   return child.privateKey;
 }
 
 // Function 2: Create transaction
-function createTransaction(utxos, recipients, fee, changeAddress) {
+export function createTransaction(
+  utxos: UTXO[], 
+  recipients: Recipient[], 
+  fee: number, 
+  changeAddress: string
+): BitcoinTxBuilder {
   // Create a bitcoin transaction
-  const txb = new bitcoin.TransactionBuilder();
+  const txb = new bitcoin.TransactionBuilder() as BitcoinTxBuilder;
   
   // Add inputs
   let inputTotal = 0;
@@ -52,7 +81,11 @@ function createTransaction(utxos, recipients, fee, changeAddress) {
 }
 
 // Function 3: Sign transaction with private key
-function signTransaction(transaction, privateKey, sigHashType = bitcoin.Transaction.SIGHASH_ALL) {
+export function signTransaction(
+  transaction: BitcoinTxBuilder, 
+  privateKey: Buffer, 
+  sigHashType: number = bitcoin.Transaction.SIGHASH_ALL
+): any {
   // Clone the transaction to avoid modifying the original
   const txb = transaction.clone();
   
@@ -67,15 +100,15 @@ function signTransaction(transaction, privateKey, sigHashType = bitcoin.Transact
 }
 
 // Main function to create and sign a transaction
-function createAndSignTransaction(seed, derivationPath, utxos, recipients, fee, changeAddress) {
+export function createAndSignTransaction(
+  seed: string, 
+  derivationPath: string, 
+  utxos: UTXO[], 
+  recipients: Recipient[], 
+  fee: number, 
+  changeAddress: string
+): any {
   const privateKey = derivePrivateKey(seed, derivationPath);
   const txb = createTransaction(utxos, recipients, fee, changeAddress);
   return signTransaction(txb, privateKey);
 }
-
-module.exports = {
-  derivePrivateKey,
-  createTransaction,
-  signTransaction,
-  createAndSignTransaction
-};

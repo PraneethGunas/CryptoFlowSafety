@@ -8,10 +8,11 @@
  * - Interprocedural weakness where key material is mishandled across functions
  */
 
-const crypto = require('crypto');
+import * as crypto from 'crypto';
+import { InsecureKeyStore, EthereumKeyResult } from './types/common';
 
 // Function 1: Generate an Ethereum key (INSECURE)
-function generateInsecureEthereumKey() {
+export function generateInsecureEthereumKey(): string {
   // VULNERABILITY: Using Math.random for key generation
   // This is not cryptographically secure
   const privateKey = Buffer.alloc(32);
@@ -23,11 +24,11 @@ function generateInsecureEthereumKey() {
 }
 
 // Function 2: Encrypt a private key with a password (INSECURE)
-function encryptPrivateKeyInsecure(privateKey, password) {
+export function encryptPrivateKeyInsecure(privateKey: string | Buffer, password: string): InsecureKeyStore {
   // Ensure privateKey is a Buffer
-  if (typeof privateKey === 'string') {
-    privateKey = Buffer.from(privateKey, 'hex');
-  }
+  const privateKeyBuffer = typeof privateKey === 'string' 
+    ? Buffer.from(privateKey, 'hex') 
+    : privateKey;
   
   // VULNERABILITY: Using a static salt
   const salt = Buffer.from('0123456789abcdef0123456789abcdef');
@@ -44,14 +45,14 @@ function encryptPrivateKeyInsecure(privateKey, password) {
   // Encrypt the private key
   const cipher = crypto.createCipheriv('aes-256-cbc', encryptionKey, iv);
   const ciphertext = Buffer.concat([
-    cipher.update(privateKey),
+    cipher.update(privateKeyBuffer),
     cipher.final()
   ]);
   
   // VULNERABILITY: No MAC to verify password correctness
   
   // Create the keystore object
-  const keystore = {
+  const keystore: InsecureKeyStore = {
     version: 1, // Non-standard version
     ciphertext: ciphertext.toString('hex'),
     iv: iv.toString('hex'),
@@ -62,7 +63,7 @@ function encryptPrivateKeyInsecure(privateKey, password) {
 }
 
 // Function 3: Decrypt a private key from a keystore (INSECURE)
-function decryptPrivateKeyInsecure(keystore, password) {
+export function decryptPrivateKeyInsecure(keystore: InsecureKeyStore, password: string): string | null {
   // VULNERABILITY: No validation of keystore format
   
   // VULNERABILITY: Weak key derivation
@@ -90,16 +91,20 @@ function decryptPrivateKeyInsecure(keystore, password) {
   } catch (error) {
     // VULNERABILITY: Returning null instead of throwing an error
     // can lead to silent failures
-    console.error(`Decryption error: ${error.message}`);
+    console.error(`Decryption error: ${(error as Error).message}`);
     return null;
   }
 }
 
 // Global variable to store private keys (INSECURE)
-const privateKeyCache = new Map();
+const privateKeyCache = new Map<string, string>();
 
 // Function 4: Use private key with caching (INSECURE)
-function usePrivateKeyWithCaching(keystoreId, privateKey, action) {
+export function usePrivateKeyWithCaching<T>(
+  keystoreId: string, 
+  privateKey: string, 
+  action: (key: string) => T
+): T {
   // VULNERABILITY: Storing private keys in a global cache
   privateKeyCache.set(keystoreId, privateKey);
   
@@ -113,7 +118,7 @@ function usePrivateKeyWithCaching(keystoreId, privateKey, action) {
 }
 
 // Main function for insecure Ethereum key management
-function insecureEthereumKeyManagement(password) {
+export function insecureEthereumKeyManagement(password: string): EthereumKeyResult {
   // Generate a new private key
   const privateKey = generateInsecureEthereumKey();
   
@@ -133,11 +138,3 @@ function insecureEthereumKeyManagement(password) {
     result
   };
 }
-
-module.exports = {
-  generateInsecureEthereumKey,
-  encryptPrivateKeyInsecure,
-  decryptPrivateKeyInsecure,
-  usePrivateKeyWithCaching,
-  insecureEthereumKeyManagement
-};

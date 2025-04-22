@@ -1,4 +1,4 @@
-# Interprocedural Cryptographic API Misuse Dataset
+# Interprocedural Cryptographic API Misuse Dataset (TypeScript)
 
 ## 🔐 Overview
 
@@ -14,6 +14,7 @@ This dataset serves multiple purposes:
 2. **Testing dataset** for tools that analyze interprocedural cryptographic API misuses
 3. **Reference implementation** for secure cryptocurrency operations
 4. **Benchmark** for evaluating static and dynamic analysis tools
+5. **Type safety demonstration** showing how TypeScript can help catch some issues at compile time
 
 ## 📚 Contents
 
@@ -21,22 +22,32 @@ The dataset contains 20 examples (10 secure, 10 insecure) covering the following
 
 | ID | Topic | Secure Example | Insecure Example |
 |----|-------|---------------|-----------------|
-| 1-2 | HD Wallet Seed Generation | `secure-wallet-generation.js` | `insecure-wallet-generation.js` |
-| 3-4 | Transaction Signing | `secure-transaction-signing.js` | `insecure-transaction-signing.js` |
-| 5-6 | Browser Extension Key Storage | `secure-browser-extension.js` | `insecure-browser-extension.js` |
-| 7-8 | BIP32/39/44 Derivation Path | `secure-derivation-path.js` | `insecure-derivation-path.js` |
-| 9-10 | ECDSA Nonce Generation | `secure-nonce-generation.js` | `insecure-nonce-generation.js` |
-| 11-12 | Transaction Data Integrity | `secure-transaction-verification.js` | `insecure-transaction-verification.js` |
-| 13-14 | Ethereum Key Management | `secure-ethereum-keystore.js` | `insecure-ethereum-keystore.js` |
-| 15-16 | Cross-Origin Communication | `secure-cross-origin.js` | `insecure-cross-origin.js` |
-| 17-18 | Random Number Generation | `secure-random.js` | `insecure-random.js` |
-| 19-20 | TLS Communication | `secure-tls.js` | `insecure-tls.js` |
+| 1-2 | HD Wallet Seed Generation | `secure-wallet-generation.ts` | `insecure-wallet-generation.ts` |
+| 3-4 | Transaction Signing | `secure-transaction-signing.ts` | `insecure-transaction-signing.ts` |
+| 5-6 | Browser Extension Key Storage | `secure-browser-extension.ts` | `insecure-browser-extension.ts` |
+| 7-8 | BIP32/39/44 Derivation Path | `secure-derivation-path.ts` | `insecure-derivation-path.ts` |
+| 9-10 | ECDSA Nonce Generation | `secure-nonce-generation.ts` | `insecure-nonce-generation.ts` |
+| 11-12 | Transaction Data Integrity | `secure-transaction-verification.ts` | `insecure-transaction-verification.ts` |
+| 13-14 | Ethereum Key Management | `secure-ethereum-keystore.ts` | `insecure-ethereum-keystore.ts` |
+| 15-16 | Cross-Origin Communication | `secure-cross-origin.ts` | `insecure-cross-origin.ts` |
+| 17-18 | Random Number Generation | `secure-random.ts` | `insecure-random.ts` |
+| 19-20 | TLS Communication | `secure-tls.ts` | `insecure-tls.ts` |
 
 Each example is heavily documented with comments explaining:
 - The overall purpose of the code
 - Key security features (in secure examples)
 - Specific vulnerabilities (in insecure examples)
 - How vulnerabilities propagate across function boundaries (interprocedural aspects)
+
+## TypeScript Advantages
+
+The TypeScript implementation adds several benefits:
+
+1. **Type Safety**: Explicit types help catch many errors at compile time
+2. **Interface Definitions**: Clear interfaces for all data structures
+3. **Better IDE Support**: Improved autocomplete, hover information, and error detection
+4. **Clearer Documentation**: Type annotations serve as inline documentation
+5. **Safer Refactoring**: Types make it safer to modify and extend code
 
 ## 🚀 Getting Started
 
@@ -58,6 +69,11 @@ cd crypto-api-misuse-dataset
 npm install
 ```
 
+3. Build the TypeScript code:
+```bash
+npm run build
+```
+
 ### Running Examples
 
 Each example can be run individually for demonstration purposes. We've included utility scripts to run and explain each example:
@@ -67,10 +83,16 @@ Each example can be run individually for demonstration purposes. We've included 
 npm run demo:secure wallet-generation
 
 # Run an insecure example
-npm run demo:insecure wallet-generation
+npm run demo:insecure transaction-signing
 
 # Run a specific function from an example
 npm run demo:function secure-wallet-generation generateSecureEntropy
+
+# List all available examples
+npm run list
+
+# Get detailed explanation comparing secure and insecure implementations
+npm run explain wallet-generation
 ```
 
 > ⚠️ **WARNING**: The insecure examples contain deliberate vulnerabilities for educational purposes. Never use these in production environments.
@@ -79,7 +101,7 @@ npm run demo:function secure-wallet-generation generateSecureEntropy
 
 Each example follows a consistent structure to facilitate learning and analysis:
 
-```javascript
+```typescript
 /**
  * Secure/Insecure implementation of [TOPIC]
  * 
@@ -90,17 +112,17 @@ Each example follows a consistent structure to facilitate learning and analysis:
  */
 
 // Function 1: [Purpose]
-function doSomething() {
+export function doSomething(param1: Type, param2: Type): ReturnType {
   // Implementation with detailed comments
 }
 
 // Function 2: [Purpose]
-function doSomethingElse() {
+export function doSomethingElse(param1: Type): ReturnType {
   // Implementation with detailed comments
 }
 
 // Main function to demonstrate the interprocedural flow
-function mainFunction() {
+export function mainFunction(input: InputType): OutputType {
   // Shows how data/control flows between functions
 }
 ```
@@ -164,7 +186,7 @@ npm run analyze:key-exposure
 
 You can extend this dataset with your own examples:
 
-1. Follow the naming convention: `[secure|insecure]-[topic].js`
+1. Follow the naming convention: `[secure|insecure]-[topic].ts`
 2. Include detailed comments explaining security features or vulnerabilities
 3. Demonstrate interprocedural flows
 4. Add your example to the test suite in `test/`
@@ -213,3 +235,7 @@ For more information about cryptographic API misuses:
 - [NIST Cryptographic Standards and Guidelines](https://csrc.nist.gov/projects/cryptographic-standards-and-guidelines)
 - [Bitcoin Developer Documentation](https://developer.bitcoin.org/devguide/index.html)
 - [CryptoAPI-Bench: A Comprehensive Benchmark on Java Cryptographic API Misuses](https://arxiv.org/abs/1812.03452)
+
+## 📜 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

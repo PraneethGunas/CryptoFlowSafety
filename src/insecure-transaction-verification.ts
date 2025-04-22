@@ -8,10 +8,11 @@
  * - Interprocedural weakness where validation failures affect signing
  */
 
-const crypto = require('crypto');
+import * as crypto from 'crypto';
+import { Transaction, SignedTransaction } from './types/common';
 
 // Function 1: Create a transaction hash (INSECURE)
-function createTransactionHashInsecure(transaction) {
+export function createTransactionHashInsecure(transaction: Transaction): string {
   // VULNERABILITY: No validation of transaction structure
   
   // VULNERABILITY: Non-deterministic serialization
@@ -24,7 +25,7 @@ function createTransactionHashInsecure(transaction) {
 }
 
 // Function 2: Minimal transaction validation (INSECURE)
-function validateTransactionMinimal(transaction) {
+export function validateTransactionMinimal(transaction: Transaction): boolean {
   // VULNERABILITY: Insufficient validation
   
   // Only check if transaction exists and has inputs and outputs
@@ -38,7 +39,10 @@ function validateTransactionMinimal(transaction) {
 }
 
 // Function 3: Sign transaction (INSECURE)
-function signTransactionInsecure(transaction, privateKey) {
+export function signTransactionInsecure(
+  transaction: Transaction, 
+  privateKey: string
+): SignedTransaction | null {
   // VULNERABILITY: Minimal validation
   if (!validateTransactionMinimal(transaction)) {
     // VULNERABILITY: Returning null instead of throwing an error
@@ -63,7 +67,10 @@ function signTransactionInsecure(transaction, privateKey) {
 }
 
 // Function 4: Process transaction (INSECURE)
-function processTransactionInsecure(signedTx, publicKey) {
+export function processTransactionInsecure(
+  signedTx: SignedTransaction, 
+  publicKey: string | Buffer
+): { valid: boolean; transaction?: Transaction } {
   // VULNERABILITY: No validation that the transaction matches the txid
   
   // VULNERABILITY: No deep copy of the transaction object
@@ -92,15 +99,10 @@ function processTransactionInsecure(signedTx, publicKey) {
 }
 
 // Main function for insecure transaction handling
-function insecureTransactionHandling(transaction, privateKey) {
+export function insecureTransactionHandling(
+  transaction: Transaction, 
+  privateKey: string
+): SignedTransaction | null {
   // Sign transaction with minimal validation
   return signTransactionInsecure(transaction, privateKey);
 }
-
-module.exports = {
-  createTransactionHashInsecure,
-  validateTransactionMinimal,
-  signTransactionInsecure,
-  processTransactionInsecure,
-  insecureTransactionHandling
-};

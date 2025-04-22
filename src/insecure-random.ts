@@ -8,16 +8,17 @@
  * - Interprocedural weakness where insecure randomness affects crypto operations
  */
 
-const crypto = require('crypto');
+import * as crypto from 'crypto';
+import { InsecureRandomResult } from './types/common';
 
 // Function 1: Generate an insecure random number (INSECURE)
-function generateInsecureRandomNumber(min, max) {
+export function generateInsecureRandomNumber(min: number, max: number): number {
   // VULNERABILITY: Using Math.random() which is not cryptographically secure
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 // Function 2: Generate an insecure random buffer (INSECURE)
-function generateInsecureRandomBuffer(size) {
+export function generateInsecureRandomBuffer(size: number): Buffer {
   // VULNERABILITY: Using Math.random() for generating random bytes
   const buffer = Buffer.alloc(size);
   for (let i = 0; i < size; i++) {
@@ -30,7 +31,10 @@ function generateInsecureRandomBuffer(size) {
 let globalCounter = Date.now();
 
 // Function 3: Generate a pseudo-random string with time-based seed (INSECURE)
-function generatePseudoRandomString(length, charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') {
+export function generatePseudoRandomString(
+  length: number, 
+  charset: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+): string {
   // VULNERABILITY: Using predictable entropy source
   // Using time-based seed and global counter
   const seed = Date.now() + globalCounter++;
@@ -43,7 +47,7 @@ function generatePseudoRandomString(length, charset = 'ABCDEFGHIJKLMNOPQRSTUVWXY
   
   // Custom pseudo-random number generator
   let state = seed;
-  const random = () => {
+  const random = (): number => {
     state = (a * state + c) % m;
     return state / m;
   };
@@ -59,8 +63,8 @@ function generatePseudoRandomString(length, charset = 'ABCDEFGHIJKLMNOPQRSTUVWXY
 }
 
 // Function 4: Use insecure random for cryptographic operations (INSECURE)
-function generateInsecureKey(type = 'AES-256') {
-  let keyLength;
+export function generateInsecureKey(type: string = 'AES-256'): Buffer {
+  let keyLength: number;
   
   // Determine key length based on algorithm
   switch (type) {
@@ -84,8 +88,14 @@ function generateInsecureKey(type = 'AES-256') {
   return generateInsecureRandomBuffer(keyLength);
 }
 
+interface EncryptionResult {
+  encrypted: string;
+  key: string;
+  iv: string;
+}
+
 // Function 5: Encrypt data with insecure key (INSECURE)
-function encryptWithInsecureKey(data, type = 'AES-256') {
+export function encryptWithInsecureKey(data: string, type: string = 'AES-256'): EncryptionResult {
   // Get an insecure key
   const key = generateInsecureKey(type);
   
@@ -108,7 +118,7 @@ function encryptWithInsecureKey(data, type = 'AES-256') {
 }
 
 // Main function demonstrating insecure random generation
-function insecureRandomOperations(data) {
+export function insecureRandomOperations(data: string): InsecureRandomResult {
   // Generate an insecure random number between 1 and 100
   const randomNumber = generateInsecureRandomNumber(1, 100);
   
@@ -124,12 +134,3 @@ function insecureRandomOperations(data) {
     encrypted
   };
 }
-
-module.exports = {
-  generateInsecureRandomNumber,
-  generateInsecureRandomBuffer,
-  generatePseudoRandomString,
-  generateInsecureKey,
-  encryptWithInsecureKey,
-  insecureRandomOperations
-};

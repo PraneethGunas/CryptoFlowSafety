@@ -10,8 +10,15 @@
 // Note: This is a browser-extension specific implementation that uses
 // Chrome extension APIs. These would not work in a standard Node.js environment.
 
+import { ExtendedWindow, KeyData, StoredKeystore } from './types/browser';
+
+// Declare global window type
+declare const window: ExtendedWindow;
+declare const chrome: any;
+declare const crypto: Crypto;
+
 // Function 1: Initialize secure storage
-async function initSecureStorage(password) {
+export async function initSecureStorage(password: string): Promise<CryptoKey> {
   // Generate a strong encryption key from the password
   const encoder = new TextEncoder();
   const passwordData = encoder.encode(password);
@@ -48,7 +55,10 @@ async function initSecureStorage(password) {
 }
 
 // Function 2: Encrypt private key
-async function encryptPrivateKey(privateKey, encryptionKey) {
+export async function encryptPrivateKey(
+  privateKey: string | Uint8Array, 
+  encryptionKey: CryptoKey
+): Promise<KeyData> {
   // Generate a random IV for AES-GCM
   const iv = crypto.getRandomValues(new Uint8Array(12));
   
@@ -75,7 +85,7 @@ async function encryptPrivateKey(privateKey, encryptionKey) {
 }
 
 // Function 3: Store encrypted private key
-async function storeEncryptedKey(keyData, keyName) {
+export async function storeEncryptedKey(keyData: KeyData, keyName: string): Promise<void> {
   // Store the encrypted key in chrome.storage.local
   await chrome.storage.local.set({ 
     [keyName]: {
@@ -87,7 +97,10 @@ async function storeEncryptedKey(keyData, keyName) {
 }
 
 // Function 4: Retrieve and decrypt private key
-async function retrieveAndDecryptKey(keyName, encryptionKey) {
+export async function retrieveAndDecryptKey(
+  keyName: string, 
+  encryptionKey: CryptoKey
+): Promise<Uint8Array> {
   // Get the encrypted key data from storage
   const data = await chrome.storage.local.get(keyName);
   if (!data[keyName]) {
@@ -110,8 +123,16 @@ async function retrieveAndDecryptKey(keyName, encryptionKey) {
   return new Uint8Array(decrypted);
 }
 
+interface SignedTransaction {
+  transaction: any;
+  signature: string;
+}
+
 // Function to sign a transaction with a key (helper function)
-function signTransactionWithKey(transaction, privateKey) {
+export function signTransactionWithKey(
+  transaction: any, 
+  privateKey: Uint8Array
+): SignedTransaction {
   // This would be a real signing implementation
   // For this example, we're just creating a mock signature
   return {
@@ -121,14 +142,21 @@ function signTransactionWithKey(transaction, privateKey) {
 }
 
 // Main function to store a private key securely
-async function secureStorePrivateKey(privateKey, password, keyName) {
+export async function secureStorePrivateKey(
+  privateKey: string | Uint8Array, 
+  password: string, 
+  keyName: string
+): Promise<void> {
   const encryptionKey = await initSecureStorage(password);
   const encryptedKey = await encryptPrivateKey(privateKey, encryptionKey);
   await storeEncryptedKey(encryptedKey, keyName);
 }
 
 // Function to retrieve a private key securely
-async function secureRetrievePrivateKey(password, keyName) {
+export async function secureRetrievePrivateKey(
+  password: string, 
+  keyName: string
+): Promise<Uint8Array> {
   // Recreate the encryption key from the password
   const salt = await chrome.storage.local.get('salt');
   if (!salt.salt) {
@@ -163,9 +191,25 @@ async function secureRetrievePrivateKey(password, keyName) {
   return retrieveAndDecryptKey(keyName, encryptionKey);
 }
 
+interface TransactionMessage {
+  action: string;
+  password: string;
+  keyName: string;
+  transaction: any;
+}
+
+interface TransactionResponse {
+  signedTransaction?: SignedTransaction;
+  error?: string;
+}
+
 // Example message handler for background script
-function setupMessageHandling() {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+export function setupMessageHandling(): void {
+  chrome.runtime.onMessage.addListener((
+    message: TransactionMessage,
+    sender: any,
+    sendResponse: (response: TransactionResponse) => void
+  ) => {
     if (message.action === 'signTransaction') {
       // Only receive the transaction data, not private keys
       // Private key is retrieved securely in the background
@@ -185,13 +229,3 @@ function setupMessageHandling() {
     }
   });
 }
-
-module.exports = {
-  initSecureStorage,
-  encryptPrivateKey,
-  storeEncryptedKey,
-  retrieveAndDecryptKey,
-  secureStorePrivateKey,
-  secureRetrievePrivateKey,
-  setupMessageHandling
-};

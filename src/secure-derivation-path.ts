@@ -7,11 +7,11 @@
  * - Prevents derivation from xpub when inappropriate
  */
 
-const bip32 = require('bip32');
-const bip39 = require('bip39');
+import * as bip32 from 'bip32';
+import * as bip39 from 'bip39';
 
 // Function 1: Validate a derivation path
-function validateDerivationPath(path) {
+export function validateDerivationPath(path: string): boolean {
   // Check if the path starts with m/
   if (!path.startsWith('m/')) {
     throw new Error('Derivation path must start with "m/"');
@@ -36,7 +36,7 @@ function validateDerivationPath(path) {
 }
 
 // Function 2: Check if a path requires private key
-function requiresPrivateKey(path) {
+export function requiresPrivateKey(path: string): boolean {
   // If any segment is hardened, private key is required
   const segments = path.slice(2).split('/');
   return segments.some(segment => 
@@ -45,7 +45,7 @@ function requiresPrivateKey(path) {
 }
 
 // Function 3: Derive a node from seed and path
-function deriveNodeFromSeed(seed, path) {
+export function deriveNodeFromSeed(seed: string, path: string): bip32.BIP32Interface {
   // Validate the path first
   validateDerivationPath(path);
   
@@ -57,7 +57,7 @@ function deriveNodeFromSeed(seed, path) {
 }
 
 // Function 4: Derive a node from xpub and path
-function deriveNodeFromXpub(xpub, path) {
+export function deriveNodeFromXpub(xpub: string, path: string): bip32.BIP32Interface {
   // Validate the path
   validateDerivationPath(path);
   
@@ -87,7 +87,11 @@ function deriveNodeFromXpub(xpub, path) {
 }
 
 // Main function to handle wallet derivation securely
-function secureWalletDerivation(seedOrXpub, path, isSeed = true) {
+export function secureWalletDerivation(
+  seedOrXpub: string, 
+  path: string, 
+  isSeed: boolean = true
+): bip32.BIP32Interface | null {
   try {
     // Choose the appropriate derivation method
     if (isSeed) {
@@ -96,15 +100,7 @@ function secureWalletDerivation(seedOrXpub, path, isSeed = true) {
       return deriveNodeFromXpub(seedOrXpub, path);
     }
   } catch (error) {
-    console.error(`Derivation error: ${error.message}`);
+    console.error(`Derivation error: ${(error as Error).message}`);
     return null;
   }
 }
-
-module.exports = {
-  validateDerivationPath,
-  requiresPrivateKey,
-  deriveNodeFromSeed,
-  deriveNodeFromXpub,
-  secureWalletDerivation
-};

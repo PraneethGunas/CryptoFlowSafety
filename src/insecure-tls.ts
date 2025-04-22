@@ -8,11 +8,27 @@
  * - Interprocedural weakness where security settings propagate
  */
 
-const https = require('https');
-const tls = require('tls');
+import * as https from 'https';
+import * as tls from 'tls';
+import { URL } from 'url';
+import { HttpResponse } from './types/common';
+
+interface HttpsOptions {
+  minVersion?: string;
+  ciphers?: string;
+  rejectUnauthorized?: boolean;
+  hostname?: string;
+  servername?: string;
+  port?: number;
+  path?: string;
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  checkServerIdentity?: (hostname: string, cert: tls.PeerCertificate) => Error | undefined;
+}
 
 // Function 1: Create insecure HTTPS options (INSECURE)
-function createInsecureHttpsOptions() {
+export function createInsecureHttpsOptions(): HttpsOptions {
   return {
     // VULNERABILITY: Allowing old TLS versions
     minVersion: 'TLSv1',
@@ -26,21 +42,21 @@ function createInsecureHttpsOptions() {
 }
 
 // Global variable to store insecure options (INSECURE)
-const globalInsecureOptions = createInsecureHttpsOptions();
+const globalInsecureOptions: HttpsOptions = createInsecureHttpsOptions();
 
 // Function 2: Make insecure HTTPS request (INSECURE)
-function makeInsecureHttpsRequest(url, options = {}) {
+export function makeInsecureHttpsRequest(url: string, options: HttpsOptions = {}): Promise<HttpResponse> {
   return new Promise((resolve, reject) => {
     // Parse the URL
     const parsedUrl = new URL(url);
     
     // VULNERABILITY: Merging with global insecure options
     // This affects all requests using this function
-    const requestOptions = {
+    const requestOptions: HttpsOptions = {
       ...globalInsecureOptions,
       ...options,
       hostname: parsedUrl.hostname,
-      port: parsedUrl.port || 443,
+      port: parsedUrl.port ? parseInt(parsedUrl.port) : 443,
       path: parsedUrl.pathname + parsedUrl.search,
       method: options.method || 'GET'
     };
@@ -57,8 +73,8 @@ function makeInsecureHttpsRequest(url, options = {}) {
       
       res.on('end', () => {
         resolve({
-          statusCode: res.statusCode,
-          headers: res.headers,
+          statusCode: res.statusCode ?? 0,
+          headers: res.headers as Record<string, string>,
           data
         });
       });
@@ -90,22 +106,22 @@ function makeInsecureHttpsRequest(url, options = {}) {
 }
 
 // Function 3: Custom certificate validator that accepts all (INSECURE)
-function acceptAllCertificates() {
+export function acceptAllCertificates(): (hostname: string, cert: tls.PeerCertificate) => Error | undefined {
   // VULNERABILITY: Accepting all certificates without validation
-  return (hostname, cert) => {
+  return (hostname: string, cert: tls.PeerCertificate) => {
     // Always return undefined (no error) to accept any certificate
     return undefined;
   };
 }
 
 // Function 4: Make request with custom domain (INSECURE)
-async function makeRequestWithCustomDomain(url, targetDomain) {
+export async function makeRequestWithCustomDomain(url: string, targetDomain: string): Promise<HttpResponse> {
   // Parse the URL
   const parsedUrl = new URL(url);
   
   // VULNERABILITY: Overriding the domain to connect to
   // This can be used to bypass certificate validation
-  const options = {
+  const options: HttpsOptions = {
     ...createInsecureHttpsOptions(),
     hostname: targetDomain,
     servername: parsedUrl.hostname, // SNI will still use the original hostname
@@ -128,8 +144,8 @@ async function makeRequestWithCustomDomain(url, targetDomain) {
       
       res.on('end', () => {
         resolve({
-          statusCode: res.statusCode,
-          headers: res.headers,
+          statusCode: res.statusCode ?? 0,
+          headers: res.headers as Record<string, string>,
           data
         });
       });
@@ -144,7 +160,7 @@ async function makeRequestWithCustomDomain(url, targetDomain) {
 }
 
 // Main function for insecure TLS communication
-async function insecureTlsCommunication(url, bypassDomain = null) {
+export async function insecureTlsCommunication(url: string, bypassDomain: string | null = null): Promise<HttpResponse> {
   try {
     // VULNERABILITY: Conditionally using certificate bypassing
     if (bypassDomain) {
@@ -155,17 +171,9 @@ async function insecureTlsCommunication(url, bypassDomain = null) {
       return await makeInsecureHttpsRequest(url);
     }
   } catch (error) {
-    console.error(`TLS communication error: ${error.message}`);
+    console.error(`TLS communication error: ${(error as Error).message}`);
     // VULNERABILITY: Retrying with certificate validation disabled
     console.log('Retrying with certificate validation disabled...');
     return await makeInsecureHttpsRequest(url, { rejectUnauthorized: false });
   }
 }
-
-module.exports = {
-  createInsecureHttpsOptions,
-  makeInsecureHttpsRequest,
-  acceptAllCertificates,
-  makeRequestWithCustomDomain,
-  insecureTlsCommunication
-};

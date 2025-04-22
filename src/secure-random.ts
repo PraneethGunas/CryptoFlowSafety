@@ -7,10 +7,11 @@
  * - Uses appropriate algorithms
  */
 
-const crypto = require('crypto');
+import * as crypto from 'crypto';
+import { SecureRandomResult } from './types/common';
 
 // Function 1: Generate a secure random number
-function generateSecureRandomNumber(min, max) {
+export function generateSecureRandomNumber(min: number, max: number): number {
   if (min >= max) {
     throw new Error('Min must be less than max');
   }
@@ -26,8 +27,8 @@ function generateSecureRandomNumber(min, max) {
   const max_value = Math.pow(2, bytesNeeded * 8) - (Math.pow(2, bytesNeeded * 8) % range);
   
   // Generate random bytes
-  let randomBytes;
-  let randomValue;
+  let randomBytes: Buffer;
+  let randomValue: number;
   
   // Loop until we get a value within the acceptable range
   do {
@@ -45,12 +46,15 @@ function generateSecureRandomNumber(min, max) {
 }
 
 // Function 2: Generate a secure random buffer
-function generateSecureRandomBuffer(size) {
+export function generateSecureRandomBuffer(size: number): Buffer {
   return crypto.randomBytes(size);
 }
 
 // Function 3: Generate a secure random string
-function generateSecureRandomString(length, charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') {
+export function generateSecureRandomString(
+  length: number, 
+  charset: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+): string {
   // Validate inputs
   if (length <= 0) {
     throw new Error('Length must be greater than 0');
@@ -73,8 +77,8 @@ function generateSecureRandomString(length, charset = 'ABCDEFGHIJKLMNOPQRSTUVWXY
 }
 
 // Function 4: Use secure random for cryptographic operations
-function generateSecureKey(type = 'AES-256') {
-  let keyLength;
+export function generateSecureKey(type: string = 'AES-256'): Buffer {
+  let keyLength: number;
   
   // Determine key length based on algorithm
   switch (type) {
@@ -99,7 +103,7 @@ function generateSecureKey(type = 'AES-256') {
 }
 
 // Main function to demonstrate secure random generation
-function secureRandomOperations() {
+export function secureRandomOperations(): SecureRandomResult {
   // Generate a secure random number between 1 and 100
   const randomNumber = generateSecureRandomNumber(1, 100);
   
@@ -115,11 +119,3 @@ function secureRandomOperations() {
     key: key.toString('hex')
   };
 }
-
-module.exports = {
-  generateSecureRandomNumber,
-  generateSecureRandomBuffer,
-  generateSecureRandomString,
-  generateSecureKey,
-  secureRandomOperations
-};

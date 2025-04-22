@@ -7,10 +7,11 @@
  * - Validates transaction structure before signing
  */
 
-const crypto = require('crypto');
+import * as crypto from 'crypto';
+import { Transaction, SignedTransaction } from './types/common';
 
 // Function 1: Create a transaction hash
-function createTransactionHash(transaction) {
+export function createTransactionHash(transaction: Transaction): string {
   // Validate transaction structure
   validateTransactionStructure(transaction);
   
@@ -22,7 +23,7 @@ function createTransactionHash(transaction) {
 }
 
 // Function 2: Validate transaction structure
-function validateTransactionStructure(transaction) {
+export function validateTransactionStructure(transaction: Transaction): boolean {
   // Check if transaction has required fields
   if (!transaction || typeof transaction !== 'object') {
     throw new Error('Transaction must be an object');
@@ -62,7 +63,7 @@ function validateTransactionStructure(transaction) {
 }
 
 // Function 3: Sort object properties for deterministic serialization
-function sortObject(obj) {
+export function sortObject(obj: any): any {
   if (typeof obj !== 'object' || obj === null) {
     return obj;
   }
@@ -73,7 +74,7 @@ function sortObject(obj) {
   }
   
   // Create a new object with sorted keys
-  const sorted = {};
+  const sorted: Record<string, any> = {};
   Object.keys(obj).sort().forEach(key => {
     sorted[key] = sortObject(obj[key]);
   });
@@ -82,7 +83,11 @@ function sortObject(obj) {
 }
 
 // Function 4: Verify transaction signature
-function verifyTransactionSignature(transaction, signature, publicKey) {
+export function verifyTransactionSignature(
+  transaction: Transaction, 
+  signature: string, 
+  publicKey: string | Buffer
+): boolean {
   // Get the transaction hash
   const txHash = createTransactionHash(transaction);
   
@@ -94,7 +99,10 @@ function verifyTransactionSignature(transaction, signature, publicKey) {
 }
 
 // Main function to create and verify a transaction
-function secureTransactionHandling(transaction, privateKey) {
+export function secureTransactionHandling(
+  transaction: Transaction, 
+  privateKey: string | Buffer
+): SignedTransaction {
   // Validate transaction structure
   validateTransactionStructure(transaction);
   
@@ -113,11 +121,3 @@ function secureTransactionHandling(transaction, privateKey) {
     txid: txHash
   };
 }
-
-module.exports = {
-  createTransactionHash,
-  validateTransactionStructure,
-  sortObject,
-  verifyTransactionSignature,
-  secureTransactionHandling
-};

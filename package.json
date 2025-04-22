@@ -2,16 +2,18 @@
   "name": "crypto-api-misuse-dataset",
   "version": "1.0.0",
   "description": "Interprocedural Cryptographic API Misuse Dataset for security research and education",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "demo:secure": "node run-demo-script.js secure",
-    "demo:insecure": "node run-demo-script.js insecure",
-    "demo:function": "node scripts/run-function.js",
-    "list": "node scripts/list-examples.js",
-    "explain": "node scripts/explain-example.js",
+    "build": "tsc",
+    "demo:secure": "ts-node run-demo-script.ts secure",
+    "demo:insecure": "ts-node run-demo-script.ts insecure",
+    "demo:function": "ts-node scripts/run-function.ts",
+    "list": "ts-node scripts/list-examples.ts",
+    "explain": "ts-node scripts/explain-example.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint src/**/*.js",
-    "lint:security": "eslint src/**/*.js --config .eslintrc-security.js"
+    "lint": "eslint src/**/*.ts",
+    "lint:security": "eslint src/**/*.ts --config .eslintrc-security.js"
   },
   "keywords": [
     "cryptography",
@@ -42,6 +44,11 @@
     "commander": "^9.4.1"
   },
   "devDependencies": {
+    "@types/bip32": "^2.0.0",
+    "@types/bip39": "^3.0.0",
+    "@types/node": "^16.11.12",
+    "@typescript-eslint/eslint-plugin": "^5.10.0",
+    "@typescript-eslint/parser": "^5.10.0",
     "eslint": "^8.33.0",
     "eslint-plugin-security": "^1.7.1",
     "eslint-plugin-node": "^11.1.0",
@@ -49,7 +56,9 @@
     "madge": "^5.0.1",
     "acorn": "^8.8.2",
     "acorn-walk": "^8.2.0",
-    "graphviz": "^0.0.9"
+    "graphviz": "^0.0.9",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
   },
   "engines": {
     "node": ">=14.0.0"

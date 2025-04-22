@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node
 
 /**
  * Script to run and demonstrate secure or insecure examples
@@ -8,14 +8,14 @@
  *   npm run demo:insecure transaction-signing
  */
 
-const fs = require('fs');
-const path = require('path');
-const chalk = require('chalk');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as chalk from 'chalk';
 
 // Check for required arguments
 const args = process.argv.slice(2);
 if (args.length < 2) {
-  console.error(chalk.red('Usage: node run-demo.js [secure|insecure] [example-name]'));
+  console.error(chalk.red('Usage: ts-node run-demo-script.ts [secure|insecure] [example-name]'));
   process.exit(1);
 }
 
@@ -28,21 +28,31 @@ if (securityType !== 'secure' && securityType !== 'insecure') {
   process.exit(1);
 }
 
-const fileName = `${securityType}-${exampleName}.js`;
+const fileName = `${securityType}-${exampleName}.ts`;
 const filePath = path.join(__dirname, 'src', fileName);
+const jsFilePath = path.join(__dirname, 'src', `${securityType}-${exampleName}.js`);
 
-// Check if file exists
-if (!fs.existsSync(filePath)) {
+// Check if file exists (try TypeScript first, then JavaScript)
+let fileContent: string;
+let actualFilePath: string;
+
+if (fs.existsSync(filePath)) {
+  fileContent = fs.readFileSync(filePath, 'utf8');
+  actualFilePath = filePath;
+} else if (fs.existsSync(jsFilePath)) {
+  fileContent = fs.readFileSync(jsFilePath, 'utf8');
+  actualFilePath = jsFilePath;
+} else {
   console.error(chalk.red(`Example file not found: ${fileName}`));
   console.log(chalk.yellow('Available examples:'));
   
   // List available examples
   const srcDir = path.join(__dirname, 'src');
   const files = fs.readdirSync(srcDir)
-    .filter(file => file.startsWith(securityType) && file.endsWith('.js'));
+    .filter(file => file.startsWith(securityType) && (file.endsWith('.js') || file.endsWith('.ts')));
   
   files.forEach(file => {
-    console.log(chalk.yellow(`  ${file.replace(`${securityType}-`, '').replace('.js', '')}`));
+    console.log(chalk.yellow(`  ${file.replace(`${securityType}-`, '').replace(/\.(js|ts)$/, '')}`));
   });
   
   process.exit(1);
@@ -52,7 +62,6 @@ if (!fs.existsSync(filePath)) {
 console.log(chalk.bold.underline(`\nDemonstrating ${securityType} example: ${exampleName}\n`));
 
 // Read and parse the file content
-const fileContent = fs.readFileSync(filePath, 'utf8');
 const functionNames = extractFunctionNames(fileContent);
 
 // Display file structure
@@ -76,7 +85,14 @@ console.log(chalk.yellow('-------------------------------------------'));
 
 try {
   // Require the file and look for a main function to execute
-  const example = require(filePath);
+  let module: any;
+  if (actualFilePath.endsWith('.ts')) {
+    // For TypeScript files
+    module = require(actualFilePath.replace(/\.ts$/, ''));
+  } else {
+    // For JavaScript files
+    module = require(actualFilePath);
+  }
   
   // Find a main function to execute
   const mainFunctionName = functionNames.find(name => 
@@ -84,12 +100,12 @@ try {
     name.startsWith(securityType)
   );
   
-  if (mainFunctionName && typeof example[mainFunctionName] === 'function') {
+  if (mainFunctionName && typeof module[mainFunctionName] === 'function') {
     // Create some dummy data for the example
     const dummyData = createDummyData(exampleName);
     
     // Execute the main function with dummy data
-    const result = example[mainFunctionName](dummyData);
+    const result = module[mainFunctionName](dummyData);
     
     // Display the result
     console.log(chalk.yellow('\nExecution result:'));
@@ -101,11 +117,11 @@ try {
 } catch (error) {
   if (securityType === 'insecure') {
     console.log(chalk.red('\nExecution failed (expected for insecure examples):'));
-    console.log(chalk.red(error.message));
+    console.log(chalk.red((error as Error).message));
     console.log(chalk.yellow('\nThis demonstrates why the insecure implementation is problematic.'));
   } else {
     console.log(chalk.red('\nExecution failed:'));
-    console.log(chalk.red(error.stack));
+    console.log(chalk.red((error as Error).stack || (error as Error).message));
   }
 }
 
@@ -137,10 +153,11 @@ if (securityType === 'secure') {
 }
 
 // Helper function to extract function names from code
-function extractFunctionNames(code) {
-  const functionRegex = /function\s+([a-zA-Z0-9_]+)\s*\(/g;
-  const functionNames = [];
-  let match;
+function extractFunctionNames(code: string): string[] {
+  // Updated regex to handle both JavaScript and TypeScript function declarations
+  const functionRegex = /(?:function|export\s+function)\s+([a-zA-Z0-9_]+)\s*\(/g;
+  const functionNames: string[] = [];
+  let match: RegExpExecArray | null;
   
   while ((match = functionRegex.exec(code)) !== null) {
     functionNames.push(match[1]);
@@ -150,7 +167,7 @@ function extractFunctionNames(code) {
 }
 
 // Helper function to extract header comment
-function extractHeaderComment(code) {
+function extractHeaderComment(code: string): string | null {
   const headerRegex = /\/\*\*[\s\S]*?\*\//;
   const match = code.match(headerRegex);
   
@@ -165,7 +182,7 @@ function extractHeaderComment(code) {
 }
 
 // Helper function to extract security features
-function extractSecurityFeatures(code) {
+function extractSecurityFeatures(code: string): string[] {
   const featuresRegex = /Key security features:([\s\S]*?)(?:\*\/|\n\s*\n)/;
   const match = code.match(featuresRegex);
   
@@ -181,7 +198,7 @@ function extractSecurityFeatures(code) {
 }
 
 // Helper function to extract vulnerabilities
-function extractVulnerabilities(code) {
+function extractVulnerabilities(code: string): string[] {
   const vulnerabilitiesRegex = /Security issues:([\s\S]*?)(?:\*\/|\n\s*\n)/;
   const match = code.match(vulnerabilitiesRegex);
   
@@ -197,7 +214,7 @@ function extractVulnerabilities(code) {
 }
 
 // Create dummy data based on the example type
-function createDummyData(exampleName) {
+function createDummyData(exampleName: string): any {
   switch (exampleName) {
     case 'wallet-generation':
       return 'strongpassphrase123';

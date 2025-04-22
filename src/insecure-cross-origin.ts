@@ -11,16 +11,37 @@
 // Note: This is a browser-specific implementation that uses
 // browser APIs. These would not work in a standard Node.js environment.
 
+import { ExtendedWindow, InsecureMessage, InsecureMessageEnvelope } from './types/browser';
+
+// Declare global window type
+declare const window: ExtendedWindow;
+
 // Global variable to store sensitive data (INSECURE)
-let sensitiveData = null;
+let sensitiveData: any = null;
+
+interface CommunicationResult {
+  sendMessage: (message: any) => void;
+}
+
+interface SigningRequest {
+  action: string;
+  privateKey: string;
+  message: string;
+}
+
+interface SignatureResult {
+  action: string;
+  signature: string;
+  message: string;
+}
 
 // Function 1: Setup insecure communication channel (INSECURE)
-function setupInsecureCommunication(iframe) {
+export function setupInsecureCommunication(iframe: HTMLIFrameElement): HTMLIFrameElement {
   // VULNERABILITY: No secure key generation
   // VULNERABILITY: No origin validation stored
   
   // Setup message listener
-  window.addEventListener('message', event => {
+  window.addEventListener('message', (event: MessageEvent) => {
     // VULNERABILITY: No origin validation
     // This allows any website to send messages
     
@@ -35,18 +56,18 @@ function setupInsecureCommunication(iframe) {
 }
 
 // Function 2: Send insecure message to iframe (INSECURE)
-function sendInsecureMessage(message, iframe) {
+export function sendInsecureMessage(message: any, iframe: HTMLIFrameElement): void {
   // VULNERABILITY: No message authentication
   
   // VULNERABILITY: No origin restriction
   // Using '*' allows any origin to receive the message
-  iframe.contentWindow.postMessage({
+  iframe.contentWindow?.postMessage({
     data: JSON.stringify(message)
   }, '*');
 }
 
 // Function 3: Process insecure message from iframe (INSECURE)
-function processInsecureMessage(data) {
+export function processInsecureMessage(data: InsecureMessageEnvelope): void {
   // VULNERABILITY: Minimal message validation
   if (!data || !data.data) {
     console.error('Invalid message format');
@@ -76,7 +97,7 @@ function processInsecureMessage(data) {
 }
 
 // Function 4: Handle private key signing request (INSECURE)
-function handleSigningRequest(data) {
+export function handleSigningRequest(data: SigningRequest): string | null {
   // VULNERABILITY: No validation of the request origin
   
   if (data.action === 'sign' && data.privateKey && data.message) {
@@ -101,14 +122,14 @@ function handleSigningRequest(data) {
 }
 
 // Helper function to sign with private key (mock implementation)
-function signWithPrivateKey(privateKey, message) {
+export function signWithPrivateKey(privateKey: string, message: string): string {
   // This would be a real signing implementation in a production environment
   // For this example, we're just creating a mock signature
   return `signature-for-${message}-with-key-${privateKey.slice(0, 8)}`;
 }
 
 // Main function to initialize insecure cross-origin communication
-function insecureIframeCommunication(iframeUrl) {
+export function insecureIframeCommunication(iframeUrl: string): CommunicationResult {
   // Create an iframe
   const iframe = document.createElement('iframe');
   iframe.src = iframeUrl;
@@ -119,15 +140,6 @@ function insecureIframeCommunication(iframeUrl) {
   
   // Return an object for sending messages
   return {
-    sendMessage: (message) => sendInsecureMessage(message, iframe)
+    sendMessage: (message: any) => sendInsecureMessage(message, iframe)
   };
 }
-
-module.exports = {
-  setupInsecureCommunication,
-  sendInsecureMessage,
-  processInsecureMessage,
-  handleSigningRequest,
-  signWithPrivateKey,
-  insecureIframeCommunication
-};
